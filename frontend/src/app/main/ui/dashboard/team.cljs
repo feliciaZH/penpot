@@ -12,6 +12,7 @@
    [app.common.schema :as sm]
    [app.config :as cfg]
    [app.main.data.common :as dcm]
+   [app.main.data.ai :as dai]
    [app.main.data.event :as ev]
    [app.main.data.modal :as modal]
    [app.main.data.nitrate :as dnt]
@@ -31,6 +32,12 @@
    [app.main.ui.ds.buttons.button :refer [button*]]
    [app.main.ui.ds.buttons.icon-button :refer [icon-button*]]
    [app.main.ui.ds.controls.combobox :refer [combobox*]]
+   [app.main.ui.ds.controls.select :refer [select*]]
+   [app.main.ui.ds.layout.data-table :refer [data-table*]]
+   [app.main.ui.ds.layout.admin-page :refer [admin-page*]]
+   [app.main.ui.ds.layout.filter-bar :refer [filter-bar*]]
+   [app.main.ui.ds.layout.page-header :refer [page-header*]]
+   [app.main.ui.ds.layout.pagination :refer [pagination*]]
    [app.main.ui.ds.foundations.assets.icon :refer [icon*] :as i]
    [app.main.ui.icons :as deprecated-icon]
    [app.main.ui.notifications.badge :refer [badge-notification]]
@@ -103,13 +110,20 @@
         (on-invite-member)))
 
     [:header {:class (stl/css :dashboard-header :team) :data-testid "dashboard-header"}
-     [:div {:class (stl/css :dashboard-title)}
-      [:h1 (cond
-             members-section? (tr "labels.members")
-             settings-section? (tr "labels.settings")
-             invitations-section? (tr "labels.invitations")
-             webhooks-section? (tr "labels.webhooks")
-             :else nil)]]
+     [:> page-header*
+      {:class (stl/css :dashboard-title)
+       :title (cond
+                members-section? (tr "labels.members")
+                settings-section? (tr "labels.settings")
+                invitations-section? (tr "labels.invitations")
+                webhooks-section? (tr "labels.webhooks")
+                :else "")
+       :actions (when (and (or invitations-section? members-section?) (:is-admin permissions) (not-empty invitations))
+                  [:a
+                   {:class (stl/css :btn-secondary :btn-small)
+                    :on-click on-invite-member
+                    :data-testid "invite-member"}
+                   (tr "dashboard.invite-profile")])}]
      [:nav {:class (stl/css :dashboard-header-menu)}
       [:ul {:class (stl/css :dashboard-header-options)}
        [:li {:class (when members-section? (stl/css :active))}
@@ -122,13 +136,7 @@
        [:li {:class (when settings-section? (stl/css :active))}
         [:a {:on-click on-nav-settings} (tr "labels.settings")]]]]
      [:div {:class (stl/css :dashboard-buttons)}
-      (if (and (or invitations-section? members-section?) (:is-admin permissions) (not-empty invitations))
-        [:a
-         {:class (stl/css :btn-secondary :btn-small)
-          :on-click on-invite-member
-          :data-testid "invite-member"}
-         (tr "dashboard.invite-profile")]
-        [:div {:class (stl/css :blank-space)}])]]))
+      [:div {:class (stl/css :blank-space)}]]]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; INVITATIONS MODAL
@@ -515,25 +523,56 @@
                (remove :is-owner)
                (vec)))]
 
-    [:div {:class (stl/css :dashboard-table :team-members)}
-     [:div {:class (stl/css :table-header)}
-      [:div {:class (stl/css :table-field :title-field-name)} (tr "labels.member")]
-      [:div {:class (stl/css :table-field :title-field-role)} (tr "labels.role")]]
-
-     [:div {:class (stl/css :table-rows)}
-      [:> team-member*
-       {:member owner
-        :team team
-        :profile profile
-        :total-members total-members}]
-
-      (for [item members]
-        [:> team-member*
-         {:member item
-          :team team
-          :profile profile
-          :key (dm/str (:id item))
-          :total-members total-members}])]]))
+    [:> data-table*
+     {:class (stl/css :dashboard-table :team-members)
+      :columns [{:id "member" :label (tr "labels.member")}
+                {:id "role" :label (tr "labels.role")}
+                {:id "actions" :label ""}]
+      :rows
+      (into
+       [{:id (dm/str (:id owner))
+         :cells [[:& member-info {:member owner :profile profile}]
+                 [:> rol-info* {:member owner
+                                :team team
+                                :on-set-admin (partial set-role! (:id owner) :admin)
+                                :on-set-editor (partial set-role! (:id owner) :editor)
+                                :on-set-viewer (partial set-role! (:id owner) :viewer)
+                                :on-set-owner (fn [_ _] nil)
+                                :profile profile}]
+                 [:span]]}]
+       (mapv
+        (fn [item]
+          {:id (dm/str (:id item))
+           :cells [[:& member-info {:member item :profile profile}]
+                   [:> rol-info* {:member item
+                                  :team team
+                                  :on-set-admin (partial set-role! (:id item) :admin)
+                                  :on-set-editor (partial set-role! (:id item) :editor)
+                                  :on-set-viewer (partial set-role! (:id item) :viewer)
+                                  :on-set-owner (fn [member _]
+                                                  (let [params {:type :confirm
+                                                                :title (tr "modals.promote-owner-confirm.title")
+                                                                :message (tr "modals.promote-owner-confirm.message" (:name member))
+                                                                :scd-message (tr "modals.promote-owner-confirm.hint")
+                                                                :accept-label (tr "modals.promote-owner-confirm.accept")
+                                                                :on-accept (partial set-role! (:id item) :owner)
+                                                                :accept-style :primary}]
+                                                    (st/emit! (modal/show params))))
+                                  :profile profile}]
+                   [:> member-actions* {:member item
+                                        :profile profile
+                                        :team team
+                                        :on-delete #(st/emit! (modal/show {:type :confirm
+                                                                           :title (tr "modals.delete-team-member-confirm.title")
+                                                                           :message (tr "modals.delete-team-member-confirm.message")
+                                                                           :accept-label (tr "modals.delete-team-member-confirm.accept")
+                                                                           :on-accept (fn [] (st/emit! (dtm/delete-member {:member-id (:id item)})))}))
+                                        :on-leave #(st/emit! (modal/show {:type :confirm
+                                                                          :title (tr "modals.leave-confirm.title")
+                                                                          :message (tr "modals.leave-confirm.message")
+                                                                          :accept-label (tr "modals.leave-confirm.accept")
+                                                                          :on-accept (fn [] (st/emit! (dtm/leave-current-team {})))}))}]]})
+        members))}]))
 
 (mf/defc team-members-page*
   {::mf/props :obj}
@@ -879,6 +918,9 @@
   [{:keys [team]}]
   (let [permissions (get team :permissions)
         invitations (mf/use-state (get team :invitations))
+        query*      (mf/use-state "")
+        page*       (mf/use-state 1)
+        page-size   10
 
         team-id     (get team :id)
 
@@ -890,6 +932,44 @@
 
         ;; Sort state: {:field :status/:role, :direction :asc/:desc}
         sort-state  (mf/use-state {:field nil :direction :asc})
+
+        filtered-invitations
+        (mf/with-memo [invitations query*]
+          (let [q (str/lower (str/trim @query*))]
+            (if (str/empty? q)
+              @invitations
+              (filterv #(str/includes? (str/lower (:email %)) q) @invitations))))
+
+        total-pages
+        (max 1 (int (Math/ceil (/ (max 1 (count filtered-invitations)) page-size))))
+
+        paged-invitations
+        (mf/with-memo [filtered-invitations page*]
+          (let [start (* (dec @page*) page-size)]
+            (->> filtered-invitations
+                 (drop start)
+                 (take page-size)
+                 (vec))))
+
+        on-query-change
+        (mf/use-fn
+         (fn [event]
+           (reset! page* 1)
+           (reset! query* (dom/get-target-val event))))
+
+        on-reset-filters
+        (mf/use-fn
+         (fn []
+           (reset! page* 1)
+           (reset! query* "")))
+
+        on-prev-page
+        (mf/use-fn #(swap! page* (fn [p] (max 1 (dec p)))))
+
+        on-next-page
+        (mf/use-fn
+         (mf/deps total-pages)
+         #(swap! page* (fn [p] (min total-pages (inc p)))))
 
         selected-invitations (mf/with-memo [selected invitations]
                                (filterv #(contains? @selected (:email %)) @invitations))
@@ -1012,6 +1092,14 @@
       (reset! sort-state {:field nil :direction :asc}))
 
     [:div {:class (stl/css :invitations)}
+     [:> filter-bar* {:query @query*
+                      :placeholder (tr "labels.search")
+                      :on-query-change on-query-change
+                      :on-reset on-reset-filters}]
+     [:div {:class (stl/css :invitations-actions)}
+      [:> button* {:variant "secondary"
+                   :on-click #(st/emit! (dai/generate-team-announcement "Invite pending members and set roles clearly."))}
+       "AI Invite Copy"]]
      (when (> (count @selected) 0)
        [:*
         [:div {:class (stl/css :invitations-actions)}
@@ -1046,17 +1134,21 @@
                                  (if (= (:direction @sort-state) :asc) "arrow-down" "arrow-up")
                                  "arrow-down")
                          :on-click on-order-by-status}]]]
-     (if (empty? @invitations)
+     (if (empty? filtered-invitations)
        [:> empty-invitation-table* {:can-invite can-invite? :team team}]
        [:div {:class (stl/css :table-rows)}
-        (for [invitation @invitations]
+        (for [invitation paged-invitations]
           [:> invitation-row*
            {:key (:email invitation)
             :invitation invitation
             :can-invite can-invite?
             :team-id team-id
             :selected selected
-            :on-select-change on-select-change}])])]))
+            :on-select-change on-select-change}])
+        [:> pagination* {:page @page*
+                         :total-pages total-pages
+                         :on-prev on-prev-page
+                         :on-next on-next-page}]]]))
 
 (mf/defc team-invitations-page*
   {::mf/props :obj}
@@ -1083,9 +1175,105 @@
                (show-subscription-members-banner? team profile))
       [:> members-cta* {:team team}])]])
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; WEBHOOKS SECTION
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(mf/defc ai-admin-page*
+  {::mf/props :obj}
+  []
+  (let [prompt*       (mf/use-state "Summarize pending team invitations and suggest the next action.")
+        intent*       (mf/use-state "ops-summary")
+        scope*        (mf/use-state "ops")
+        page*         (mf/use-state 1)
+        page-size     3
+        ai-rows       [{:id "ops-summary"
+                        :intent "Ops summary"
+                        :scope "ops"
+                        :status "Available"
+                        :description "Summarize operational events and highlight next steps."}
+                       {:id "team-announcement"
+                        :intent "Team announcement"
+                        :scope "team"
+                        :status "Available"
+                        :description "Generate concise team-facing announcement copy."}
+                       {:id "resource-tags"
+                        :intent "Resource tags"
+                        :scope "resource"
+                        :status "Available"
+                        :description "Suggest resource tags from plain text context."}]
+        total-pages   (max 1 (int (Math/ceil (/ (count ai-rows) page-size))))
+        paged-rows    (mf/with-memo [page*]
+                      (let [start (* (dec @page*) page-size)]
+                        (->> ai-rows
+                             (drop start)
+                             (take page-size)
+                             (vec))))
+        on-prompt-change
+        (mf/use-fn #(reset! prompt* (dom/get-target-val %)))
+        on-reset
+        (mf/use-fn #(reset! prompt* ""))
+        on-intent-change
+        (mf/use-fn #(reset! intent* %))
+        on-scope-change
+        (mf/use-fn #(reset! scope* %))
+        on-run
+        (mf/use-fn
+         (mf/deps prompt* intent* scope*)
+         (fn []
+           (let [text (str/trim @prompt*)]
+             (when-not (str/empty? text)
+               (case @intent*
+                 "team-announcement" (st/emit! (dai/generate-team-announcement text))
+                 "resource-tags" (st/emit! (dai/suggest-resource-tags text))
+                 (st/emit! (dai/summarize-ops-events text)))))))
+        on-prev-page
+        (mf/use-fn #(swap! page* (fn [p] (max 1 (dec p)))))
+        on-next-page
+        (mf/use-fn
+         (mf/deps total-pages)
+         #(swap! page* (fn [p] (min total-pages (inc p)))))]
+    [:section {:class (stl/css :dashboard-container)}
+     [:> admin-page*
+      {:size "wide"
+       :header [:> page-header*
+                {:title "AI operations"
+                 :description "Review available AI workflows and run a controlled assistant action from the dashboard."
+                 :metadata "Feature flag: ai-assistant"
+                 :actions [:> button* {:variant "primary"
+                                       :on-click on-run}
+                           "Run AI"]}]
+       :filters [:> filter-bar*
+                 {:query @prompt*
+                  :placeholder "Describe the task or context for the assistant"
+                  :on-query-change on-prompt-change
+                  :on-reset on-reset
+                  :actions [:*
+                            [:> select* {:options [{:id "ops-summary" :label "Ops summary"}
+                                                   {:id "team-announcement" :label "Team announcement"}
+                                                   {:id "resource-tags" :label "Resource tags"}]
+                                         :default-selected @intent*
+                                         :on-change on-intent-change}]
+                            [:> select* {:options [{:id "ops" :label "Ops"}
+                                                   {:id "team" :label "Team"}
+                                                   {:id "resource" :label "Resource"}]
+                                         :default-selected @scope*
+                                         :on-change on-scope-change}]]}]
+       :content [:*
+                 [:> data-table*
+                  {:caption "Available AI workflows"
+                   :columns [{:id "intent" :label "Intent"}
+                             {:id "scope" :label "Scope"}
+                             {:id "status" :label "Status"}
+                             {:id "description" :label "Description"}]
+                   :rows (mapv (fn [{:keys [id intent scope status description]}]
+                                 {:id id
+                                  :cells [intent scope status description]})
+                               paged-rows)
+                   :empty-text "No AI workflows available"}]
+                 [:> pagination* {:page @page*
+                                  :total-pages total-pages
+                                  :total (count ai-rows)
+                                  :page-size page-size
+                                  :on-prev on-prev-page
+                                  :on-next on-next-page}]]}]]))
+
 
 (def ^:private schema:webhook-form
   [:map {:title "WebhookForm"}
@@ -1222,7 +1410,11 @@
                       :content (tr "dashboard.webhooks.description")}]
    [:button {:class (stl/css :hero-btn)
              :on-click #(st/emit! (modal/show :webhook {}))}
-    (tr "dashboard.webhooks.create")]])
+    (tr "dashboard.webhooks.create")]
+   [:> button*
+    {:variant "secondary"
+     :on-click #(st/emit! (dai/summarize-ops-events "Summarize recent webhook deliveries and errors."))}
+    "AI Summary"]])
 
 (mf/defc webhook-actions*
   {::mf/props :obj
@@ -1563,7 +1755,11 @@
         [:div {:class (stl/css :block-content)}
          document-icon
          [:span {:class (stl/css :block-text)}
-          (tr "labels.num-of-files" (i18n/c (:files stats)))]]]
+          (tr "labels.num-of-files" (i18n/c (:files stats)))]]
+        [:div {:class (stl/css :block-content)}
+         [:> button* {:variant "secondary"
+                      :on-click #(st/emit! (dai/suggest-resource-tags (str "projects " (:projects stats) " files " (:files stats))))}
+          "AI Tags"]]]
 
        (when (contains? cfg/flags :subscriptions)
          [:> team* {:is-owner (:is-owner permissions) :team team}])]]]))

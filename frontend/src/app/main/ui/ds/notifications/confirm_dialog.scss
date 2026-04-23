@@ -1,0 +1,39 @@
+@use "../_borders.scss" as *;
+@use "../typography.scss" as t;
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-background-overlay);
+}
+
+.dialog {
+  width: min(100%, 30rem);
+  padding: var(--sp-l);
+  border: $b-1 solid var(--color-background-quaternary);
+  border-radius: $br-12;
+  background-color: var(--color-background-primary);
+}
+
+.title {
+  @include t.use-typography("title-medium");
+
+  margin: 0 0 var(--sp-s);
+}
+
+.message {
+  @include t.use-typography("body-medium");
+
+  margin: 0 0 var(--sp-l);
+  color: var(--color-foreground-secondary);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-s);
+}

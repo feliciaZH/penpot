@@ -1,0 +1,73 @@
+@use "../_utils.scss" as *;
+@use "../_borders.scss" as *;
+@use "../typography.scss" as t;
+
+.table {
+  width: 100%;
+  border: $b-1 solid var(--color-background-quaternary);
+  border-radius: $br-8;
+  border-spacing: 0;
+  background-color: var(--color-background-primary);
+}
+
+.caption {
+  @include t.use-typography("body-small");
+
+  padding: var(--sp-m);
+  color: var(--color-foreground-secondary);
+  text-align: left;
+}
+
+.header {
+  background: var(--color-background-secondary);
+}
+
+.header-cell {
+  @include t.use-typography("body-small");
+
+  padding: var(--sp-m);
+  border-bottom: $b-1 solid var(--color-background-quaternary);
+  color: var(--color-foreground-secondary);
+  text-align: left;
+}
+
+.body {
+  background-color: var(--color-background-primary);
+}
+
+.row {
+  cursor: default;
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.row:last-child .cell {
+  border-bottom: 0;
+}
+
+.cell {
+  @include t.use-typography("body-medium");
+
+  padding: var(--sp-m);
+  border-bottom: $b-1 solid var(--color-background-tertiary);
+  color: var(--color-foreground-primary);
+  vertical-align: middle;
+}
+
+.align-center {
+  text-align: center;
+}
+
+.align-end {
+  text-align: right;
+}
+
+.state {
+  @include t.use-typography("body-medium");
+
+  padding: var(--sp-xl);
+  color: var(--color-foreground-secondary);
+  text-align: center;
+}

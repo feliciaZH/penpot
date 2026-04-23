@@ -1,0 +1,17 @@
+@use "../typography.scss" as t;
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sp-s);
+  padding-block: var(--sp-m);
+}
+
+
+.total {
+  @include t.use-typography("body-small");
+
+  color: var(--color-foreground-secondary);
+  margin-right: auto;
+}

@@ -6,6 +6,7 @@
 
 (ns app.main
   (:require
+   [app.ai.client :as-alias ai]
    [app.auth.ldap :as-alias ldap]
    [app.auth.oidc :as-alias oidc]
    [app.auth.oidc.providers :as-alias oidc.providers]
@@ -329,6 +330,7 @@
     ::db/pool            (ig/ref ::db/pool)
     ::rds/pool           (ig/ref ::rds/pool)
     :app.nitrate/client (ig/ref :app.nitrate/client)
+    ::ai/client          (ig/ref :app.ai/client)
     ::wrk/executor       (ig/ref ::wrk/netty-executor)
     ::session/manager    (ig/ref ::session/manager)
     ::ldap/provider      (ig/ref ::ldap/provider)
@@ -354,6 +356,9 @@
    :app.nitrate/client
    {::http.client/client (ig/ref ::http.client/client)
     ::setup/shared-keys  (ig/ref ::setup/shared-keys)}
+
+   :app.ai/client
+   {}
 
    :app.rpc/management-methods
    {::http.client/client (ig/ref ::http.client/client)
@@ -394,6 +399,7 @@
      :session-gc         (ig/ref ::session.tasks/gc)
      :audit-log-archive  (ig/ref :app.loggers.audit.archive-task/handler)
      :audit-log-gc       (ig/ref :app.loggers.audit.gc-task/handler)
+     :ai-generate        (ig/ref :app.tasks.ai-generate/handler)
 
      :delete-object
      (ig/ref :app.tasks.delete-object/handler)
@@ -449,6 +455,10 @@
    {::db/pool            (ig/ref ::db/pool)
     ::http.client/client (ig/ref ::http.client/client)
     ::setup/props        (ig/ref ::setup/props)}
+
+   :app.tasks.ai-generate/handler
+   {::db/pool  (ig/ref ::db/pool)
+    ::ai/client (ig/ref :app.ai/client)}
 
    [::srepl/urepl ::srepl/server]
    {::srepl/port (cf/get :urepl-port 6062)
@@ -583,6 +593,15 @@
    [::webhook ::wrk/runner]
    {::wrk/parallelism (cf/get ::worker-webhook-parallelism 1)
     ::wrk/queue       :webhooks
+    ::wrk/tenant      (cf/get :tenant)
+    ::rds/client      (ig/ref ::rds/client)
+    ::wrk/registry    (ig/ref ::wrk/registry)
+    ::mtx/metrics     (ig/ref ::mtx/metrics)
+    ::db/pool         (ig/ref ::db/pool)}
+
+   [::ai ::wrk/runner]
+   {::wrk/parallelism (cf/get :worker-ai-parallelism 1)
+    ::wrk/queue       :ai
     ::wrk/tenant      (cf/get :tenant)
     ::rds/client      (ig/ref ::rds/client)
     ::wrk/registry    (ig/ref ::wrk/registry)

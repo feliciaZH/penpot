@@ -31,7 +31,7 @@
    [app.main.ui.dashboard.projects :refer [projects-section*]]
    [app.main.ui.dashboard.search :refer [search-page*]]
    [app.main.ui.dashboard.sidebar :refer [sidebar*]]
-   [app.main.ui.dashboard.team :refer [team-settings-page* team-members-page* team-invitations-page* webhooks-page*]]
+   [app.main.ui.dashboard.team :refer [team-settings-page* team-members-page* team-invitations-page* webhooks-page* ai-admin-page*]]
    [app.main.ui.dashboard.templates :refer [templates-section*]]
    [app.main.ui.hooks :as hooks]
    [app.main.ui.modal :refer [modal-container*]]
@@ -149,6 +149,9 @@
 
        :dashboard-webhooks
        [:> webhooks-page* {:team team}]
+
+       :dashboard-ai-operations
+       [:> ai-admin-page*]
 
        :dashboard-settings
        [:> team-settings-page* {:team team :profile profile}]

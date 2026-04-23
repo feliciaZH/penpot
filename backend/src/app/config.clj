@@ -85,7 +85,9 @@
    :email-verify-threshold "15m"
 
    :quotes-upload-sessions-per-profile 5
-   :quotes-upload-chunks-per-session 20})
+   :quotes-upload-chunks-per-session 20
+   :ai-max-context-chars 1200
+   :worker-ai-parallelism 1})
 
 (def schema:config
   (do #_sm/optional-keys
@@ -135,6 +137,8 @@
     [:scheduled-executor-parallelism {:optional true} ::sm/int] ;; REVIEW
     [:worker-default-parallelism {:optional true} ::sm/int]
     [:worker-webhook-parallelism {:optional true} ::sm/int]
+    [:worker-ai-parallelism {:optional true} ::sm/int]
+    [:ai-max-context-chars {:optional true} ::sm/int]
 
     [:database-password {:optional true} [:maybe :string]]
     [:database-uri {:optional true} ::sm/uri]

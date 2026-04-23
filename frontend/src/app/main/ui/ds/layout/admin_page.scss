@@ -1,0 +1,31 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-m);
+  width: 100%;
+  max-width: 960px;
+}
+
+.wide {
+  max-width: 1200px;
+}
+
+.full {
+  max-width: none;
+}
+
+.header,
+.filters,
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-s);
+}
+
+
+.loading {
+  padding: var(--sp-xl);
+  color: var(--color-foreground-secondary);
+  text-align: center;
+}

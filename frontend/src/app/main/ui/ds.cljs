@@ -26,7 +26,13 @@
    [app.main.ui.ds.foundations.utilities.token.token-status :refer [token-status-icon*
                                                                     token-status-list]]
    [app.main.ui.ds.layout.tab-switcher :refer [tab-switcher*]]
+   [app.main.ui.ds.layout.data-table :refer [data-table*]]
+   [app.main.ui.ds.layout.admin-page :refer [admin-page*]]
+   [app.main.ui.ds.layout.filter-bar :refer [filter-bar*]]
+   [app.main.ui.ds.layout.page-header :refer [page-header*]]
+   [app.main.ui.ds.layout.pagination :refer [pagination*]]
    [app.main.ui.ds.notifications.actionable :refer [actionable*]]
+   [app.main.ui.ds.notifications.confirm-dialog :refer [confirm-dialog*]]
    [app.main.ui.ds.notifications.context-notification :refer [context-notification*]]
    [app.main.ui.ds.notifications.shared.notification-pill :refer [notification-pill*]]
    [app.main.ui.ds.notifications.toast :refer [toast*]]
@@ -69,7 +75,13 @@
     :Combobox combobox*
     :Text text*
     :TabSwitcher tab-switcher*
+    :DataTable data-table*
+    :AdminPage admin-page*
+    :FilterBar filter-bar*
+    :PageHeader page-header*
+    :Pagination pagination*
     :Toast toast*
+    :ConfirmDialog confirm-dialog*
     :Tooltip tooltip*
     :ContextNotification context-notification*
     :NotificationPill notification-pill*
