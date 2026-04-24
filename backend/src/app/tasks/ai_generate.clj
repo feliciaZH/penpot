@@ -15,7 +15,7 @@
   (assert (db/pool? (::db/pool params)) "expected valid db pool"))
 
 (defmethod ig/init-key ::handler
-  [_ {:keys [::db/pool] :as cfg}]
+  [_ {::db/keys [pool] :as cfg}]
   (fn [{:keys [id props]}]
     (let [{:keys [intent context]} props
           result (ai/generate* (::ai/client cfg) {:intent intent :context context})

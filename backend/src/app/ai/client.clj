@@ -32,7 +32,7 @@
       (format "Team update:\n- Summary: %s\n- Action: Review pending invitations and roles." text)
 
       :resource-tags
-      {:tags (->> (str/split (str/lower text) #"\W+")
+      {:tags (->> (str/split (str/lower-case text) #"\W+")
                   (remove str/blank?)
                   (take 6)
                   vec)}

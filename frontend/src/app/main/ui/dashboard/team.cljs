@@ -1148,7 +1148,7 @@
         [:> pagination* {:page @page*
                          :total-pages total-pages
                          :on-prev on-prev-page
-                         :on-next on-next-page}]]]))
+                         :on-next on-next-page}]])]))
 
 (mf/defc team-invitations-page*
   {::mf/props :obj}

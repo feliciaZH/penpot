@@ -65,7 +65,7 @@
   {::doc/added "2.8"
    ::sm/params schema:create-ai-task
    ::rpc/auth true}
-  [{:keys [::db/pool]} {:keys [intent context ::rpc/profile-id]}]
+  [{::db/keys [pool]} {:keys [intent context ::rpc/profile-id]}]
   (ensure-ai-enabled!)
   (let [task-id (wrk/submit! ::db/conn pool
                              ::wrk/task :ai-generate
@@ -83,7 +83,7 @@
   {::doc/added "2.8"
    ::sm/params schema:get-ai-task
    ::rpc/auth true}
-  [{:keys [::db/pool]} {:keys [task-id]}]
+  [{::db/keys [pool]} {:keys [task-id]}]
   (ensure-ai-enabled!)
   (if-let [task (db/get* pool :task {:id task-id})]
     (let [props (:props task)
